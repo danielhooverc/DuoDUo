@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>改进的2D仓库可视化（完整版）</title>
+    <style>
+
+        /* 基本页面样式 */
+        body, html {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* 固定头部样式 */
+        .header {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 80px; /* 固定高度 */
+            display: flex;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        /* 仓库内容区域样式 */
+        .content {
+            position: absolute;
+            top: 80px; /* 与header高度相同 */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* 确保第一个Row不被遮挡 */
+        .row:first-child {
+            margin-top: 50px;
+        }
+        /*页面底部与最后一个Row的间距*/
+        .bottom-spacer {
+            height: 10px; /* 或任何您需要的值 */
+        }
+
+        /* 优化滚动性能 */
+        .content {
+            -webkit-overflow-scrolling: touch; /* 为iOS设备提供平滑滚动 */
+            will-change: transform; /* 提示浏览器元素将被频繁变换 */
+        }
+
+        /* 仓库整体布局 */
+        .warehouse {
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* 行之间的间距 */
+        }
+
+        /* 每一行的样式 */
+        .row {
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* 行标签样式 */
+        .row-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: #f0f0f0;
+            padding: 0 10px;
+            font-weight: bold;
+            font-size: 25px;
+        }
+
+        /* 货架容器样式 */
+        .bay-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 10px 10px 10px;
+            position: relative;
+        }
+
+        /* 层级标签容器样式 */
+        .level-labels {
+            position: relative;
+            width: 30px;
+        }
+
+        /* 每个层级标签的样式 */
+        .level-label {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /*font-weight: bold;*/
+            font-size: 12px;
+        }
+
+        /* 货架组样式 */
+        .bays {
+            display: flex;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* 单个货架样式 */
+        .bay {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-start;
+        }
+
+        /* 货架标签样式 */
+        .bay-label {
+            align-self: center;
+            margin-top: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 层级组样式 */
+        .levels {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* 单个层级样式 */
+        .level {
+            display: flex;
+            gap: 1px;
+            align-items: center;
+            height: 30px;
+        }
+
+        /* 层级分隔线样式 */
+        .level-separator {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1px dashed #999;
+        }
+
+        /* 储位样式 */
+        .position {
+            width: 40px;
+            height: 25px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.3),
+                        inset -2px -2px 4px rgba(0,0,0,0.2),
+                        inset 2px 2px 4px rgba(255,255,255,0.2);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 储位光泽效果 */
+        .position::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0) 60%);
+            z-index: 1;
+        }
+
+        /* 储位点击效果（放大1.8倍） */
+        .position.active {
+            transform: scale(1.5);
+            z-index: 3;
+			border: 0.1px solid #c85662; /* 鲜红色边框 */
+        }
+
+        /* 不同状态的储位颜色 */
+		.Available {
+			background: #F5F5F5; /* 浅白色 */
+			color: #333; /* 深灰色文字，确保可读性 */
+			border: 1px solid #DDD; /* 添加浅灰色边框以增加辨识度 */
+		}
+        .Occupied {
+            background: linear-gradient(135deg, #98FB98, #32CD32);
+            color: #006400;
+        }
+        .N\/A {
+            background: linear-gradient(135deg, #AAAAAA, #767676);
+            color: #333;
+        }
+
+        /* 储位内文字样式 */
+        .position span {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 信息弹窗样式 */
+        #info {
+            position: fixed;
+            background-color: rgba(255, 255, 255, 0.3);    /* 设置透明度为30% */
+            color: #63625d;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 14px;
+            width: 300px; /* 设置固定宽度 */
+            height: 50px; /* 设置固定高度 */
+            /*height: auto; !* 高度自适应内容 *!*/
+            min-height: 100px; /* 设置最小高度 */
+            max-height: 300px; /* 设置最大高度 */
+            overflow-y: auto; /* 如果内容超出，显示垂直滚动条 */
+            pointer-events: auto; /* 允许在弹窗内滚动 */
+            padding-bottom: 40px; /* 为Detail按钮留出空间 */
+        }
+         #detailButton {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        #detailButton:hover {
+            background-color: #45a049;
+        }
+
+        /* 添加Detail窗口样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>改进的2D仓库可视化（完整版）</h1>
+        <!-- 这里可以添加更多按钮或其他元素 -->
+    </div>
+    <div class="content">
+        <div class="warehouse" id="warehouse"></div>
+        <div class="bottom-spacer"></div> <!-- 底部间距 -->
+    </div>
+    <div id="info"></div>
+
+    <!-- 添加模态窗口 -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // 获取仓库和信息弹窗的DOM元素
+        const warehouse = document.getElementById('warehouse');
+        const infoDiv = document.getElementById('info');
+        const contentDiv = document.querySelector('.content'); // 添加这行来定义货架显示区 contentDiv
+
+        // 定义仓库的基本参数
+        const rows = 10, bays = 12, levels = 5, positions = ['1', '2'];
+
+        // 用于跟踪当前活动的储位
+        let currentActive = null;
+
+        // 生成随机状态的函数
+        function getRandomStatus() {
+            const statuses = ["Available", "Occupied", "N/A"];
+            return statuses[Math.floor(Math.random() * statuses.length)];
+        }
+
+        // 显示信息弹窗的函数
+        function showInfo(event, content) {
+            //获取触发事件的元素（在这里是被点击的 Position）的位置和尺寸信息
+            //getBoundingClientRect() 返回一个 DOMRect 对象，包含了元素的 top, right, bottom, left, width, height 等属性。
+            //这些值都是相对于视口的位置
+            const rect = event.target.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;//获取当前浏览器视口的高度。这用于后续判断悬浮窗口是否会超出屏幕底部
+            let top = rect.bottom + 15;  //在Position下面加15的位置显示悬浮窗口
+            if (top + 100 > viewportHeight) {
+                // 如果悬浮窗口会超出底部，就将其位置调整到被点击元素的上方，
+                // 150 可能是悬浮窗口的高度（100）加上一些额外的间隔（50）
+                top = rect.top - 150;
+            }
+            infoDiv.style.left = `${rect.left}px`; //设置悬浮窗口的左侧位置，使其与被点击元素的左边对齐
+            infoDiv.style.top = `${top}px`;  //设置悬浮窗口的顶部位置，使用之前计算的 top 值
+            infoDiv.innerHTML = content;     //将传入的 content 内容设置为悬浮窗口的 HTML 内容
+            infoDiv.style.display = 'block'; //将悬浮窗口的 display 样式设置为 'block'，使其可见
+
+            // 添加 "Detail" 按钮
+            infoDiv.innerHTML = content + '<button id="detailButton">Detail</button>';
+            infoDiv.style.display = 'block';
+
+            // 为 "Detail" 按钮添加点击事件
+            document.getElementById('detailButton').addEventListener('click', function() {
+                showDetailModal(content);
+            });
+        }
+
+        // 添加显示详细模态窗口的函数
+        let isModalOpen = false; // 新增：跟踪模态窗口是否打开
+        function showDetailModal(content) {
+            const modal = document.getElementById('detailModal');
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = content;
+            modal.style.display = 'block';
+            isModalOpen = true; // 设置模态窗口状态为打开
+
+            // 关闭模态窗口的功能
+            const closeBtn = modal.querySelector('.close');
+            closeBtn.onclick = function() {
+                closeModal();
+            }
+
+            // 移除点击模态窗口外部关闭的功能
+            window.onclick = null;
+        }
+
+        // 新增：关闭模态窗口的函数
+        function closeModal() {
+            const modal = document.getElementById('detailModal');
+            modal.style.display = 'none';
+            isModalOpen = false; // 设置模态窗口状态为关闭
+        }
+
+        // 隐藏信息弹窗的函数
+        function hideInfo() {
+            infoDiv.style.display = 'none';
+            if (currentActive) {
+                currentActive.classList.remove('active');
+                currentActive = null;
+            }
+        }
+
+        // 创建仓库布局
+        for (let r = 0; r < rows; r++) {
+            // 创建行元素
+            const row = document.createElement('div');
+            row.className = 'row';
+
+            // 创建行标签
+            const rowLabel = document.createElement('div');
+            rowLabel.className = 'row-label';
+            rowLabel.textContent = ` ${String.fromCharCode(65 + r)}`;
+            row.appendChild(rowLabel);
+
+            // 创建货架容器
+            const bayContainer = document.createElement('div');
+            bayContainer.className = 'bay-container';
+
+            // 创建层级标签
+            const levelLabels = document.createElement('div');
+            levelLabels.className = 'level-labels';
+            const levelHeight = 30;
+            const gapHeight = 10;
+            const totalHeight = levels * levelHeight + (levels - 1) * gapHeight;
+
+            // 添加层级标签
+            for (let l = 0; l < levels; l++) {
+                const levelLabel = document.createElement('div');
+                levelLabel.className = 'level-label';
+                if (l===0){
+                  levelLabel.textContent = `Fn`;
+                }else{
+                  levelLabel.textContent = `L${l}`;
+                }
+
+                const topPosition = totalHeight - ((l+1) * (levelHeight + gapHeight) - levelHeight / 2);
+                levelLabel.style.top = `${topPosition}px`;
+                levelLabels.appendChild(levelLabel);
+            }
+            bayContainer.appendChild(levelLabels);
+
+            // 创建货架组
+            const baysDiv = document.createElement('div');
+            baysDiv.className = 'bays';
+
+            // 创建每个货架
+            for (let b = 0; b < bays; b++) {
+                const bay = document.createElement('div');
+                bay.className = 'bay';
+                const levelsDiv = document.createElement('div');
+                levelsDiv.className = 'levels';
+
+
+                // 创建货架标签
+                const bayLabel = document.createElement('div');
+                bayLabel.className = 'bay-label';
+                bayLabel.textContent = `${String.fromCharCode(65 + r)}${b+1}`;
+                bay.appendChild(bayLabel);
+
+
+
+                // 创建每个层级
+                for (let l = 0; l < levels; l++) {
+                    const level = document.createElement('div');
+                    level.className = 'level';
+                    //处理Fn层；Fn层每个Bay只有一个Position；因此不存在一个Bay中循环生成多个Position的情况
+                    if (l===0 ){
+                        //因为只有在两个Bay之间才能放一个Fn的Position； 因此Fn的Position数是Bays-1；因此第0个省掉
+                        if (b>0){
+                            const position = document.createElement('div');
+                            const status = getRandomStatus();
+                            position.className = `position ${status}`;
+
+                            position.style.left='-30px';
+                            position.innerHTML = `<span>${b}-${b+1}</span>`;
+                            level.appendChild(position);
+
+                            // 创建储位信息内容
+                            const infoContent = `<strong>储位信息</strong><br>Row: ${String.fromCharCode(65 + r)}<br>Bay: ${String.fromCharCode(65 + r)}${b+1}<br>Level: Fn<br>Position: ${b}-${b+1}<br>Status: ${status}`;
+
+                            // 添加点击事件监听器
+                            position.addEventListener('click', (event) => {
+                                event.stopPropagation();
+                                if (currentActive) {
+                                    currentActive.classList.remove('active');
+                                }
+                                position.classList.add('active');
+                                currentActive = position;
+                                showInfo(event, infoContent);
+                            });
+
+                        }
+
+
+
+                    } else {
+
+                        // 创建每个储位
+                        for (let p = 0; p < positions.length; p++) {
+                            const position = document.createElement('div');
+                            const status = getRandomStatus();
+                            position.className = `position ${status}`;
+                            position.innerHTML = `<span>${positions[p]}</span>`;
+
+                            // 创建储位信息内容
+                            const infoContent = `<strong>储位信息</strong><br>Row: ${String.fromCharCode(65 + r)}<br>Bay: ${String.fromCharCode(65 + r)}${b+1}<br>Level: ${l}<br>Position: ${positions[p]}<br>Status: ${status}`;
+
+                            // 添加点击事件监听器
+                            position.addEventListener('click', (event) => {
+                                event.stopPropagation();
+                                if (currentActive) {
+                                    currentActive.classList.remove('active');
+                                }
+                                position.classList.add('active');
+                                currentActive = position;
+                                showInfo(event, infoContent);
+                            });
+
+                            level.appendChild(position);
+                        }
+
+                    }
+
+
+                    levelsDiv.appendChild(level);
+                }
+                bay.appendChild(levelsDiv);
+
+
+                baysDiv.appendChild(bay);
+            }
+
+            bayContainer.appendChild(baysDiv);
+
+            // 添加层级分隔线
+            for (let l = 1; l < levels; l++) {
+                const separator = document.createElement('div');
+                separator.className = 'level-separator';
+                const topPosition = totalHeight - (l * (levelHeight + gapHeight) - gapHeight / 2);
+                separator.style.top = `${topPosition + 47}px`;
+                bayContainer.appendChild(separator);
+            }
+
+            // 添加右侧层级标签
+            const levelLabelsRight = levelLabels.cloneNode(true);
+            bayContainer.appendChild(levelLabelsRight);
+
+            row.appendChild(bayContainer);
+            warehouse.appendChild(row);
+        }
+
+        // 添加滚动事件监听器到 contentDiv;这个函数表示鼠标滚动悬浮窗口会消失；Position会失焦
+        //contentDiv.addEventListener('scroll', hideInfo);
+
+
+        // 使用事件委托来处理所有的点击事件
+        document.addEventListener('click', (event) => {
+            if (isModalOpen) {
+                // 如果模态窗口打开，阻止所有其他点击事件
+                return;
+            }
+            const position = event.target.closest('.position');
+            if (position) {
+                event.stopPropagation();
+                if (currentActive) {
+                    currentActive.classList.remove('active');
+                }
+                if (currentActive !== position) {
+                    position.classList.add('active');
+                    currentActive = position;
+                    const infoContent = position.getAttribute('data-info');
+                    showInfo(position, infoContent);
+                } else {
+                    hideInfo();
+                    currentActive = null;
+                }
+            } else if (!event.target.closest('#info')) {
+                hideInfo();
+            }
+        });
+
+        // 添加一个函数来更新悬浮窗口的位置
+        function updateInfoPosition() {
+            if (currentActive) {
+                const rect = currentActive.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                let top = rect.bottom + 5;
+                if (top + 100 > viewportHeight) {
+                    top = rect.top - 105;
+                }
+                infoDiv.style.left = `${rect.left}px`;
+                infoDiv.style.top = `${top}px`;
+            }
+        }
+
+        // 在滚动时更新悬浮窗口的位置
+        contentDiv.addEventListener('scroll', updateInfoPosition);
+
+
+    </script>
+</body>
+</html>

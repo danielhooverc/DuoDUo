@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Record</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Add New Daily Receiving Record</h1>
+
+    <!-- 表单用于添加新记录 -->
+    <form method="POST" action="{{ url_for('add_record') }}">
+        <label for="receiving_date">Receiving Date:</label>
+        <input type="date" id="receiving_date" name="receiving_date" required><br>
+
+        <!-- 将 Receive Type 为下拉框 -->
+        <label for="receiving_type">Receiving Type:</label>
+        <select id="receiving_type" name="receiving_type" required>
+            <option value="Purchase">Purchase</option>
+            <option value="Removal">Removal</option>
+            <option value="RMA">RMA</option>
+            <option value="Callback">Callback</option>
+            <option value="Warranty">callback</option>
+        </select><br>
+
+        <label for="ponumber">PO Number:</label>
+        <input type="text" id="ponumber" name="ponumber"  maxlength="30" required><br>
+
+        <label for="finale_id">Finale ID:</label>
+        <input type="text" id="finale_id" name="finale_id"  maxlength="30" required><br>
+
+        <label for="part_no">Part No:</label>
+        <input type="text" id="part_no" name="part_no"   maxlength="30" ><br>
+
+        <label for="sn">Serial Number (SN):</label>
+        <input type="text" id="sn" name="sn"   maxlength="30" required><br>
+
+        <label for="total_received_qty">Total Received Quantity:</label>
+        <input type="number" id="total_received_qty" name="total_received_qty"  min="0" max="99999" required><br>
+
+        <label for="total_order_qty">Total Order Quantity:</label>
+        <input type="number" id="total_order_qty" name="total_order_qty"  min="0" max="99999" required><br>
+
+        <!-- Tracking Number 为大输入框 -->
+        <label for="tracking_number">Tracking Number:</label>
+        <textarea id="tracking_number" name="tracking_number"  maxlength="3000" rows="10" cols="50" placeholder="Enter up to 20 tracking numbers, one per line"></textarea><br>
+
+
+        <label for="received_status">Received Status:</label>
+        <input id="received_status" name="received_status"  maxlength="500" ></textarea><br>
+
+
+       <label for="receiving_notes">Receiving Notes:</label>
+        <input id="receiving_notes" name="receiving_notes"  maxlength="3000" ></textarea><br>
+
+
+        <label for="location">Location:</label>
+        <input type="text" id="location" name="location"  maxlength="30"  required><br>
+
+        <label for="master">Master:</label>
+        <input type="text" id="master" name="master" maxlength="30"  required><br>
+
+        <label for="unit_weight">Unit Weight:</label>
+        <input type="number" step="0.1" id="unit_weight" name="unit_weight" min="0" max="999.99" required><br>
+
+        <label for="unit_dimension">Unit Dimension:</label>
+        <input type="text" id="unit_dimension" name="unit_dimension" maxlength="30"  required><br>
+
+        <label for="packing_dimension_per_unit">Packing Dimension Per Unit:</label>
+        <input type="text" id="packing_dimension_per_unit" name="packing_dimension_per_unit"  maxlength="50" required><br>
+
+        <label for="po_status">PO Status:</label>
+        <input type="text" id="po_status" name="po_status" maxlength="500"><br>
+
+        <button type="submit">Add Record</button>
+    </form>
+
+    <!-- 返回记录列表的链接 -->
+    <a href="{{ url_for('receiving_list') }}">Back to List</a>
+
+
+</body>
+</html>

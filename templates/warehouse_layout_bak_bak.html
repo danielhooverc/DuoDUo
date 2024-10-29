@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>改进的2D仓库可视化（完整版）</title>
+    <style>
+        /* 基本页面样式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* 仓库整体布局 */
+        .warehouse {
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* 行之间的间距 */
+        }
+
+        /* 每一行的样式 */
+        .row {
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* 行标签样式 */
+        .row-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: #f0f0f0;
+            padding: 0 10px;
+            font-weight: bold;
+            font-size: 25px;
+        }
+
+        /* 货架容器样式 */
+        .bay-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 10px 10px 10px;
+            position: relative;
+        }
+
+        /* 层级标签容器样式 */
+        .level-labels {
+            position: relative;
+            width: 30px;
+        }
+
+        /* 每个层级标签的样式 */
+        .level-label {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* 货架组样式 */
+        .bays {
+            display: flex;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* 单个货架样式 */
+        .bay {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-start;
+        }
+
+        /* 货架标签样式 */
+        .bay-label {
+            align-self: center;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        /* 层级组样式 */
+        .levels {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* 单个层级样式 */
+        .level {
+            display: flex;
+            gap: 1px;
+            align-items: center;
+            height: 30px;
+        }
+
+        /* 层级分隔线样式 */
+        .level-separator {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1px dashed #999;
+        }
+
+        /* 储位样式 */
+        .position {
+            width: 40px;
+            height: 25px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.3), 
+                        inset -2px -2px 4px rgba(0,0,0,0.2),
+                        inset 2px 2px 4px rgba(255,255,255,0.2);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 储位光泽效果 */
+        .position::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0) 60%);
+            z-index: 1;
+        }
+
+        /* 储位点击效果（放大1.5倍） */
+        .position.active {
+            transform: scale(2);
+            z-index: 3;
+			border: 0.1px solid #c85662; /* 鲜红色边框 */
+            /* box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); 添加红色阴影效果 */
+        }
+
+        /* 不同状态的储位颜色 */
+		.Available { 
+			background: #F5F5F5; /* 浅白色 */
+			color: #333; /* 深灰色文字，确保可读性 */
+			border: 1px solid #DDD; /* 添加浅灰色边框以增加辨识度 */
+		}
+        .Occupied { 
+            background: linear-gradient(135deg, #98FB98, #32CD32);
+            color: #006400;
+        }
+        .N\/A { 
+            background: linear-gradient(135deg, #AAAAAA, #767676);
+            color: #333;
+        }
+
+        /* 储位内文字样式 */
+        .position span {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 信息弹窗样式 */
+        #info {
+            position: fixed;
+            background-color: rgba(255, 255, 255, 0.3);    /* 设置透明度为30% */
+            color: #000;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 14px;
+            width: 200px; /* 设置固定宽度 */
+            height: auto; /* 高度自适应内容 */
+            min-height: 100px; /* 设置最小高度 */
+            max-height: 300px; /* 设置最大高度 */
+            overflow-y: auto; /* 如果内容超出，显示垂直滚动条 */
+            pointer-events: auto; /* 允许在弹窗内滚动 */
+        }
+    </style>
+</head>
+<body>
+    <h1>改进的2D仓库可视化（完整版）</h1>
+    <div class="warehouse" id="warehouse"></div>
+    <div id="info"></div>
+
+    <script>
+        // 获取仓库和信息弹窗的DOM元素
+        const warehouse = document.getElementById('warehouse');
+        const infoDiv = document.getElementById('info');
+
+        // 定义仓库的基本参数
+        const rows = 10, bays = 12, levels = 5, positions = ['1', '2', '3'];
+
+        // 用于跟踪当前活动的储位
+        let currentActive = null;
+
+        // 生成随机状态的函数
+        function getRandomStatus() {
+            const statuses = ["Available", "Occupied", "N/A"];
+            return statuses[Math.floor(Math.random() * statuses.length)];
+        }
+
+        // 显示信息弹窗的函数
+        function showInfo(event, content) {
+            const rect = event.target.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            let top = rect.bottom + 5;
+            if (top + 100 > viewportHeight) {
+                top = rect.top - 105;
+            }
+            infoDiv.style.left = `${rect.left}px`;
+            infoDiv.style.top = `${top}px`;
+            infoDiv.innerHTML = content;
+            infoDiv.style.display = 'block';
+        }
+
+        // 隐藏信息弹窗的函数
+        function hideInfo() {
+            infoDiv.style.display = 'none';
+            if (currentActive) {
+                currentActive.classList.remove('active');
+                currentActive = null;
+            }
+        }
+
+        // 创建仓库布局
+        for (let r = 0; r < rows; r++) {
+            // 创建行元素
+            const row = document.createElement('div');
+            row.className = 'row';
+            
+            // 创建行标签
+            const rowLabel = document.createElement('div');
+            rowLabel.className = 'row-label';
+            rowLabel.textContent = ` ${String.fromCharCode(65 + r)}`;
+            row.appendChild(rowLabel);
+
+            // 创建货架容器
+            const bayContainer = document.createElement('div');
+            bayContainer.className = 'bay-container';
+
+            // 创建层级标签
+            const levelLabels = document.createElement('div');
+            levelLabels.className = 'level-labels';
+            const levelHeight = 30;
+            const gapHeight = 10;
+            const totalHeight = levels * levelHeight + (levels - 1) * gapHeight;
+            
+            // 添加层级标签
+            for (let l = 1; l <= levels; l++) {
+                const levelLabel = document.createElement('div');
+                levelLabel.className = 'level-label';
+                levelLabel.textContent = `L${l-1}`;
+                const topPosition = totalHeight - (l * (levelHeight + gapHeight) - levelHeight / 2);
+                levelLabel.style.top = `${topPosition}px`;
+                levelLabels.appendChild(levelLabel);
+            }
+            bayContainer.appendChild(levelLabels);
+
+            // 创建货架组
+            const baysDiv = document.createElement('div');
+            baysDiv.className = 'bays';
+
+            // 创建每个货架
+            for (let b = 0; b < bays; b++) {
+                const bay = document.createElement('div');
+                bay.className = 'bay';
+                const levelsDiv = document.createElement('div');
+                levelsDiv.className = 'levels';
+
+                // 创建每个层级
+                for (let l = 0; l < levels; l++) {
+                    const level = document.createElement('div');
+                    level.className = 'level';
+
+                    // 创建每个储位
+                    for (let p = 0; p < positions.length; p++) {
+                        const position = document.createElement('div');
+                        const status = getRandomStatus();
+                        position.className = `position ${status}`;
+                        position.innerHTML = `<span>${positions[p]}</span>`;
+
+                        // 创建储位信息内容
+                        const infoContent = `<strong>储位信息</strong><br>Row: ${String.fromCharCode(65 + r)}<br>Bay: ${String.fromCharCode(65 + r)}${b+1}<br>Level: ${l}<br>Position: ${positions[p]}<br>Status: ${status}`;
+
+                        // 添加点击事件监听器
+                        position.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            if (currentActive) {
+                                currentActive.classList.remove('active');
+                            }
+                            position.classList.add('active');
+                            currentActive = position;
+                            showInfo(event, infoContent);
+                        });
+
+                        level.appendChild(position);
+                    }
+                    
+                    levelsDiv.appendChild(level);
+                }
+                bay.appendChild(levelsDiv);
+
+                // 创建货架标签
+                const bayLabel = document.createElement('div');
+                bayLabel.className = 'bay-label';
+                bayLabel.textContent = `${String.fromCharCode(65 + r)}${b+1}`;
+                bay.appendChild(bayLabel);
+                baysDiv.appendChild(bay);
+            }
+
+            bayContainer.appendChild(baysDiv);
+
+            // 添加层级分隔线
+            for (let l = 1; l < levels; l++) {
+                const separator = document.createElement('div');
+                separator.className = 'level-separator';
+                const topPosition = totalHeight - (l * (levelHeight + gapHeight) - gapHeight / 2);
+                separator.style.top = `${topPosition + 20}px`;
+                bayContainer.appendChild(separator);
+            }
+
+            // 添加右侧层级标签
+            const levelLabelsRight = levelLabels.cloneNode(true);
+            bayContainer.appendChild(levelLabelsRight);
+
+            row.appendChild(bayContainer);
+            warehouse.appendChild(row);
+        }
+
+        // 添加滚动事件监听器
+        window.addEventListener('scroll', hideInfo);
+
+        // 添加全局点击事件来隐藏信息窗口
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.position')) {
+                hideInfo();
+            }
+        });
+    </script>
+</body>
+</html>

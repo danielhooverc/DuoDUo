@@ -1,0 +1,107 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    padding: 10px;
+}
+
+
+
+h2 {
+    color: #333;
+	text-align: center;
+	font-family: Arial, sans-serif;
+    padding: 100px;
+	font-size: 50px;
+}
+
+form {
+    margin-top: 5px;
+
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="text"] {
+    padding: 10px;
+    width: 300px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    color: red;
+    font-weight: bold;
+}
+
+
+/* 表格样式 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table, th, td {
+    border: 1px solid black;  /* 添加边框 */
+}
+/* 为特定列应用换行符处理 */
+.with-linebreaks {
+    white-space: pre-wrap; /* 按照数据中的换行符换行显示 */
+    word-wrap: break-word;  /* 在需要时打破单词，防止超长单词破坏布局 */
+ }
+th, td {
+    padding: 8px;  /* 内边距 */
+    text-align: left;  /* 左对齐 */
+}
+
+/* 设置标题的字体大小 */
+th {
+    font-size: 14px;  /* 标题字体调小 */
+}
+
+/* 设置表格内容的字体大小 */
+td {
+    font-size: 12px;  /* 记录字体调小 */
+}
+
+/* 让 more 链接更显眼 */
+a {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* 主标题样式 */
+h1 {
+    font-size: 18px;  /* 主标题字体大小调整 */
+	color: #333;
+}
+
+ .center-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+ }
+
+

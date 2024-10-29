@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Receiving List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+	        /* 通用页面背景 */
+        body {
+            background-color: #f7f9fc;
+            font-family: 'Arial', sans-serif;
+			margin: 2; padding: 0;
+        }
+        /* 设置表头居中 */
+        th {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            text-align: center; /* 表头信息居中 */
+			background-color: #4e73df;
+            color: white;
+			font-size: 13px;
+        }
+
+        /* 表格行的间距调整，变得紧凑 */
+        table {
+            border-collapse: collapse;
+			background-color: #ffffff;
+            width: 2270px;
+            font-size: 12px;
+        }
+        /*点击表头排序*/
+        .sortable {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        td {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        /* 行间距 */
+        tr {
+            line-height: 1.2;
+        }
+
+        /* 鼠标悬停时，行变色，颜色更亮 */
+        tr:hover {
+            background-color: #f0f8ff; /* 使用更亮的颜色 */
+        }
+
+		/* 被选中的行的背景颜色 */
+		.selected-row {
+			background-color: #D3E2F4; /* 你可以根据需求调整颜色 */
+		}
+
+        /* Received Status 字段超过15个字符显示省略号，悬停显示完整内容 */
+        .received-status {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px; /* 根据需要调整 */
+        }
+
+
+         /* 只有当有 has-tooltip 类时才显示悬浮窗口 */
+        .has-tooltip:hover::after {
+            content: attr(data-full-status);
+            background-color:   #BCE7EC;
+            padding: 20px;
+			max-width: 50ch; 
+            border-radius: 4px;
+            position: absolute;
+            z-index: 1000;
+
+            white-space: normal;
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 12px;
+        }
+
+		/* 处理POStatus在表格靠右时的情况 */
+		.po-status.has-tooltip:hover::after {
+			left: auto; /* 禁用左对齐 */
+			right: 0; /* 右对齐 */
+			transform: translateX(+350px); /* 轻微向左偏移，避免距离过远 */
+		}
+
+        /* 强制换行显示的列 */
+        .wrap-column {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 150px; /* 根据需要调整最大宽度 */
+        }
+
+    /* label 字体调整 */
+    form label {
+        font-size: 12px;  /* 调整字体大小 */
+      }
+  
+    </style>
+</head>
+<body>
+
+<div style="display: flex; align-items: center;">
+
+  <h1>Daily Receiving List (Welcome, {{ username }}! )</h1>&nbsp;&nbsp;
+
+  <div style="display: flex; align-items: center; gap: 10px;"> 
+  
+    <a href="{{ url_for('add_record',page=page, per_page=per_page,sort=sort, order=order) }}">Add New Record</a>
+     &nbsp;&nbsp;
+<!--  下载Excel功能有问题；暂时屏蔽掉     
+<a href="{{ url_for('download_receiving_list', record_date=record_date, receiving_date=receiving_date, receiving_type=receiving_type, name=name, finale_id=finale_id, sn=sn, tracking_number=tracking_number) }}">Download Excel</a>&nbsp;&nbsp; -->
+  </div>
+
+   <!-- 将 Add to Google Sheets的输入框添加到这里 -->
+	<div style="border: 0px solid #ccc; padding: 0px; display: flex; justify-content: flex-end; align-items: center; margin-left: 10px; width: 1285px;">
+		<button type="button" onclick="addToGoogleSheets()">Add to Google Sheets</button>
+	</div>
+
+ 
+</div>
+
+<!-- 查询表单 -->
+<form method="POST" id="Normal_Search_Form" action="{{ url_for('receiving_list') }}">
+  <div style="display: flex; align-items: center; margin-bottom: 10px; gap: 10px;"> 
+
+	  <div style="border: 1px solid #ccc; padding: 2px; display: flex; align-items: center; margin-left: 0px;">
+			<label for="record_date">Record Date  (From):</label>
+			<input type="date" name="record_date" value="{{ record_date }}" style="margin: 0 10px;">
+			
+			<label for="record_date_end"> (To):</label>
+			<input type="date" name="record_date_end" value="{{ record_date_end }}" style="margin: 0 10px;">
+	  </div>
+		&nbsp; 
+	  <div style="border: 1px solid #ccc; padding: 2px; display: flex; align-items: center; margin-left: 0px;">
+			
+			<label for="receiving_date">Receiving Date  (From):</label>
+			<input type="date" name="receiving_date"  value="{{ receiving_date }}" style="margin: 0 10px;">
+			
+			<label for="receiving_date_end"> (To):</label>
+			<input type="date" name="receiving_date_end" value="{{ receiving_date_end }}" style="margin: 0 10px;">
+	  </div>
+		  &nbsp; 
+	   <div style="border: 1px solid #ccc; padding: 2px; display: flex; align-items: center; margin-left: 0px;">
+			<label for="receiving_type">Type:</label>
+			<select id="receiving_type" name="receiving_type" style="margin: 0 10px;">
+			    <option value="">-- Select Type --</option>
+                <option value="Purchase" {% if receiving_type == "Purchase" %}selected{% endif %}>Purchase</option>
+                <option value="Removal" {% if receiving_type == "Removal" %}selected{% endif %}>Removal</option>
+                <option value="RMA" {% if receiving_type == "RMA" %}selected{% endif %}>RMA</option>
+                <option value="Callback" {% if receiving_type == "Callback" %}selected{% endif %}>Callback</option>
+                <option value="Warranty" {% if receiving_type == "Warranty" %}selected{% endif %}>Warranty</option>
+		</select>
+
+			<label for="name">Name:</label>
+			<select id="name" name="name" style="margin: 0 10px;">
+				<option value="" {% if not option_name %}selected{% endif %}>-- Select Name --</option>
+				{% for name in names %}
+					<option value="{{ name }}" {% if name == option_name %}selected{% endif %}>{{ name }}</option>
+				{% endfor %}
+			</select>
+
+			</div>
+
+
+    </div>
+
+    <div style="display: flex; align-items: center; margin-bottom: 10px; gap: 10px;">
+
+	   <div style="border: 1px solid #ccc; padding: 2px; display: flex; align-items: center; margin-left: 0px;">
+			<label for="finale_id">Finale ID:</label>
+			<input type="text" name="finale_id" value="{{ finale_id }}" style="padding: 4px; font-size: 14px; width: 110px; margin: 0 10px;"> 
+
+			<label for="sn">SN:</label>
+			<input type="text" name="sn" value="{{ sn }}" style="padding: 4px; font-size: 14px; width: 250px; margin: 0 10px;"> 
+
+			<label for="tracking_number">Tracking Number:</label>
+			<input type="text" name="tracking_number" value="{{ tracking_number }}"  style="padding: 4px; font-size: 14px; width: 250px; margin: 0 10px;"> 
+
+			<button type="submit" name="search_type" value="normal" id='search_normal'>Search</button>&nbsp;&nbsp;
+			<button type="button" onclick="resetOptions()">Reset Options</button>&nbsp;&nbsp; 
+			<button type="button" onclick="editSelected()">Edit</button>&nbsp;&nbsp; 
+            <button type="button" onclick="confirmDelete()">Delete</button>&nbsp;&nbsp; 
+		</div>
+
+
+		  <!-- 将 Universal_Search_Form 的输入框添加到这里 -->
+			<div style="border: 1px solid #ccc; padding: 2px; display: flex; align-items: center; margin-left: 10px;width: 500px;">
+			  <input type="text" name="search_info" placeholder="Universal Search..." style="padding: 4px; font-size: 14px; width: 300px; margin: 0 10px;">
+			  <button type="submit" name="search_type" value="universal" style="margin-left: 5px;">Universal Search</button>&nbsp;&nbsp;&nbsp;&nbsp;
+		    </div>
+ 
+    
+	</div>
+
+</form>
+
+
+
+
+
+
+
+    <!-- 添加一个新的表单来包裹整个表格 -->
+    <form id="record-form" method="POST" action="{{ url_for('delete_records') }}">
+    <table>
+        <thead>
+            <tr>
+                <th width="5"> </th>
+				<th width="5">#</th> <!-- 序号列 -->
+			    <th width="130" class="sortable" data-sort="RecordDate">Record Date</th>
+                <th width="70" class="sortable" data-sort="ReceivingDate">Receiving Date</th>
+                <th width="70" class="sortable" data-sort="ReceivingType">Receiving Type</th>
+                <th width="50" class="sortable" data-sort="Name">Name</th>
+                <th width="150" class="sortable" data-sort="PONumber">PO Number</th>
+                <th width="150" class="sortable" data-sort="FinaleID">Finale ID</th>
+                <th width="150" class="sortable" data-sort="PartNo">Part No</th>
+                <th width="150" class="sortable" data-sort="SN">SN</th>
+                <th width="50" class="sortable" data-sort="Total_Received_QTY">Total Received QTY</th>
+                <th width="50" class="sortable" data-sort="Total_Order_QTY">Total Order QTY</th>
+                <th width="280" class="sortable" data-sort="TrackingNumber">Tracking Number</th>
+                <th width="100" class="sortable" data-sort="ReceivedStatus">Received Status</th>
+                <th width="100" class="sortable" data-sort="ReceivingNotes">Receiving Notes</th>
+                <th width="100" class="sortable" data-sort="Location">Location</th>
+                <th width="100" class="sortable" data-sort="Master">Master</th>
+                <th width="100" class="sortable" data-sort="UnitWeight">Unit Weight</th>
+                <th width="100" class="sortable" data-sort="UnitDimension">Unit Dimension</th>
+                <th width="100" class="sortable" data-sort="Packing_Dimension_Per_Unit">Packing Dimension Per Unit</th>
+                <th width="100" class="sortable" data-sort="POStatus">PO Status</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+			<!-- 在每一行 (<tr>) 中添加 onclick 事件，这样点击整行时会触发该行复选框的选中/取消选中功能。 -->
+            <tr onclick="toggleCheckbox(this)">
+
+                <td><input type="checkbox" name="selected_records" value="{{ record.RecordID }}" class="select-box"></td>
+				<td>{{ loop.index + (page - 1) * per_page }}</td> <!-- 序号列 -->
+                <td>{{ record.RecordDate.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ record.ReceivingDate.strftime('%Y-%m-%d') }}</td>
+                <!-- <td>{{ record.ReceivingType }}</td> -->
+				 <td style="{% if record.ReceivingType == 'Purchase' %}background-color: orange;{% endif %}">{{ record.ReceivingType }}</td>
+                <td>{{ record.Name }}</td>
+                <td>{{ record.PONumber }}</td>
+                <td>{{ record.FinaleID }}</td>
+
+                <!-- Part No 换行显示 -->
+                <td class="wrap-column">{{ record.PartNo }}</td>
+
+                <!-- SN 换行显示 -->
+                <td class="wrap-column">{{ record.SN }}</td>
+
+                <td>{{ record.Total_Received_QTY }}</td>
+                <td>{{ record.Total_Order_QTY }}</td>
+
+                <!-- Tracking Number 换行显示 -->
+                <td class="wrap-column">{{ record.TrackingNumber }}</td>
+
+                <!-- Received Status 显示省略号 -->
+				<td class="received-status {% if record.ReceivedStatus|length > 15 %} has-tooltip {% endif %}" data-full-status="{{ record.ReceivedStatus }}">
+					{{ record.ReceivedStatus[:15] }}
+					{% if record.ReceivedStatus|length > 15 %}...{% endif %}
+				</td>
+
+                <td class="receiving-notes {% if record.ReceivingNotes|length > 15%} has-tooltip{%endif%}" data-full-status="{{record.ReceivingNotes}}">
+				    {{ record.ReceivingNotes[:15] }}
+					{% if record.ReceivingNotes|length > 15 %}...{% endif %}
+				</td>
+
+                <td>{{ record.Location }}</td>
+                <td>{{ record.Master }}</td>
+                <td>{{ record.UnitWeight }}</td>
+                <td>{{ record.UnitDimension }}</td>
+                <td>{{ record.Packing_Dimension_Per_Unit }}</td>
+
+                <td class="po-status {% if record.POStatus|length > 15%} has-tooltip {%endif%}" data-full-status="{{record.POStatus}}">
+				    {{ record.POStatus[:15] }}
+					{% if record.POStatus|length > 15 %}...{% endif %}
+				</td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
+    <!-- 分页 -->
+    <div>
+	     <form method="GET" action="{{ url_for('receiving_list') }}">
+            <select name="per_page" onchange="this.form.submit()">
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+            </select>
+
+            <span>Total Records: {{ total_records }} &nbsp;&nbsp;&nbsp; Page: </span>
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                    <strong>{{ p }}</strong>
+                {% else %}
+                    <a href="{{ url_for('receiving_list', page=p, per_page=per_page) }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </form>
+    </div>
+
+
+<!-- 添加一个模态对话框和进度条，在 body 标签的末尾添加 -->
+<div id="progressModal" class="modal">
+    <div class="modal-content">
+        <h2>Adding to Google Sheets...</h2>
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.4);
+        /* 使用 flexbox 来居中内容 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content {
+        background-color: #fefefe;
+        padding: 15px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 300px; /* 减小最大宽度 */
+        text-align: center;
+    }
+    .progress-bar {
+        width: 100%;
+        background-color: #e0e0e0;
+        padding: 2px;
+        border-radius: 3px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, .2);
+    }
+    .progress {
+        display: block;
+        height: 10px; /* 减小高度 */
+        background-color: #659cef;
+        border-radius: 3px;
+        transition: width 500ms ease-in-out;
+    }
+    /* 调整标题大小 */
+    .modal-content h2 {
+        font-size: 14px;
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+</style>
+
+
+
+</body>
+</html>
+
+<!-- JavaScript 脚本 -->
+<script>
+
+//在页面加载时检查并关闭加载Google Sheets进度显示窗口
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('progressModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+});
+
+ //重置所有控件值
+ function resetOptions() {
+        var form = document.getElementById('Normal_Search_Form');
+        
+        // 重置所有输入框
+        var inputs = form.querySelectorAll('input[type="text"], input[type="date"]');
+        inputs.forEach(function(input) {
+            input.value = '';
+        });
+        
+        // 重置所有选择框
+        var selects = form.querySelectorAll('select');
+        selects.forEach(function(select) {
+            select.selectedIndex = 0;
+        });
+        
+        // 清除 Universal Search 输入框
+        var universalSearch = document.querySelector('input[name="search_info"]');
+        if (universalSearch) {
+            universalSearch.value = '';
+        }
+    }
+
+// 只能选择一行进行编辑
+function editSelected() {
+    var selectedRecords = document.querySelectorAll('input[name="selected_records"]:checked');
+    if (selectedRecords.length === 1) {
+        var recordId = selectedRecords[0].value;
+        // 获取当前页面的参数
+        const page = '{{ page }}';
+        const per_page = '{{ per_page }}';
+        const sort = '{{ sort }}';
+        const order = '{{ order }}';
+
+       // 检查 recordId 是否有效
+        if (recordId) {
+
+            // 直接拼接 edit_record 的 URL
+            //window.location.href = "/edit/" + recordId;
+
+		// 构建新的 URL，带上这些参数
+        let editUrl = `/edit/${recordId}?page=${page}&per_page=${per_page}&sort=${sort}&order=${order}`;
+
+        // 跳转到编辑页面
+        window.location.href = editUrl;
+
+        } else {
+            alert("Invalid record ID.");
+        }
+    } else if (selectedRecords.length > 1) {
+        alert("Please select only one record to edit.");
+    } else {
+        alert("Please select a record to edit.");
+    }
+}
+
+    // 删除选中的记录
+    function confirmDelete() {
+        var selectedRecords = document.querySelectorAll('input[name="selected_records"]:checked');
+
+        if (selectedRecords.length > 0) {
+            if (confirm("Are you sure you want to delete the selected record(s)?")) {
+                document.getElementById('record-form').submit();
+           }
+        } else {
+            alert("Please select at least one record to delete.");
+        }
+    }
+
+    //在页面中添加 JavaScript 代码来处理点击行时的复选框切换：
+   function toggleCheckbox(row) {
+    // 找到当前行中的复选框
+    var checkbox = row.querySelector('input[type="checkbox"]');
+    
+    // 检查 checkbox 是否存在
+    if (checkbox) {
+        // 切换复选框的选中状态
+        checkbox.checked = !checkbox.checked;
+        
+        // 根据复选框的选中状态添加或移除 'selected-row' 类
+        if (checkbox.checked) {
+            row.classList.add('selected-row');
+        } else {
+            row.classList.remove('selected-row');
+        }
+    }
+}
+   
+ //点击表头排序
+document.querySelectorAll('.sortable').forEach(
+ th => {
+    th.addEventListener('click', () => {
+        const sort = th.getAttribute('data-sort');
+        let currentOrder = '{{ order }}';
+        let newOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+
+        // 获取当前查询表单中的参数
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+
+        // 检查是否存在 Universal Search 参数
+        const universalSearch = "{{ session.get('universal_search', '') }}";
+        if (universalSearch) {
+            formData.append('universal_search', universalSearch);
+        }
+
+       //alert("=", universalSearch);
+ 
+        // 获取当前的每页显示条数
+        const perPage = '{{ per_page }}';
+        formData.append('per_page', perPage);
+
+        // 将查询参数拼接到 URL 中
+        let queryParams = new URLSearchParams(formData).toString();
+        let newUrl = `{{ url_for('receiving_list') }}?sort=${sort}&order=${newOrder}&${queryParams}`;
+        
+        // 跳转到新的 URL
+        window.location.href = newUrl;
+    });
+});
+
+
+    //普通查询必须至少选择一个查询条件
+    document.getElementById('search_normal').addEventListener('click', function () {
+        var form = document.getElementById('Normal_Search_Form');
+        var inputs = form.querySelectorAll('input, select');
+        var isEmpty = true;
+
+        // 检查所有输入框和下拉列表是否有值
+        inputs.forEach(function (input) {
+            if (input.value.trim() !== '') {
+                isEmpty = false; // 如果找到有值的字段，设置为false
+            }
+        });
+
+        // 如果所有控件都没有值，弹出提示框并返回
+        if (isEmpty) {
+            alert("Please enter at least one search option.");
+			event.preventDefault();  // 阻止表单提交
+        } else {
+            form.submit(); // 提交表单
+        }
+    });
+
+// 添加到 Google Sheet
+function addToGoogleSheets() {
+    var recordDate = document.querySelector('input[name="record_date"]').value;
+    var recordDateEnd = document.querySelector('input[name="record_date_end"]').value;
+    var name = document.querySelector('select[name="name"]').value;
+
+    if ((!recordDate && !recordDateEnd) || !name) {
+        alert("Please select both Record Date and Name before adding to Google Sheets.");
+        return;
+    }
+
+	if (!confirm("Are you sure you want to add this data to Google Sheets?")) {
+       return; // 如果用户点击"取消"，则直接返回
+    }
+
+    // 显示进度条模态框
+    var modal = document.getElementById('progressModal');
+    var progressBar = modal.querySelector('.progress');
+    modal.style.display = 'flex'; // 使用 flex 来居中显示
+    progressBar.style.width = '0%';
+
+   //定义表单数据
+    var formData = new FormData();
+    formData.append('record_date', recordDate);
+    formData.append('record_date_end', recordDateEnd);
+    formData.append('name', name);
+
+    fetch("{{ url_for('add_to_google_sheets') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+	    if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        // 模拟进度
+        var progress = 0;
+        var interval = setInterval(() => {
+            progress += 10;
+            progressBar.style.width = progress + '%';
+            if (progress >= 90) clearInterval(interval);
+        }, 200);
+        return response.json();
+    })
+    .then(data => {
+        // 完成进度条
+        progressBar.style.width = '100%';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            if (data.success) {
+                alert('Successfully added to Google Sheets!');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        }, 500);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        modal.style.display = 'none'; // 确保在错误情况下也隐藏模态框
+        if (error.message.includes('502')) {
+            alert('Google Sheets is temporarily unavailable. Please try again in a few minutes.');
+        } else {
+            alert('An error occurred while adding to Google Sheets: ' + error.message);
+        }
+    });
+}
+
+</script>

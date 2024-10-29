@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Receiving List</title>
+    <style>
+        /* 调整表格的样式 */
+        table {
+            border-collapse: collapse; /* 合并边框 */
+            width: 100%;
+        }
+
+        th, td {
+            padding: 4px 8px; /* 调整 padding，减小内边距 */
+            border: 1px solid #ddd; /* 保持边框样式 */
+            line-height: 1.2; /* 行高更紧凑 */
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        td {
+            vertical-align: top; /* 上对齐，避免文字垂直居中导致的空白 */
+        }
+
+        /* 调整表单的间距 */
+        form {
+            margin-bottom: 20px; /* 让表单与表格之间保留间距 */
+        }
+
+        /* 标题样式 */
+        h1 {
+            margin-bottom: 20px; /* 减少标题和表单之间的间距 */
+        }
+
+        /* 分页和记录数选择的样式 */
+        div {
+            margin-top: 10px;
+        }
+
+        /* 调整按钮和输入框样式 */
+        input[type="text"], input[type="date"], select {
+            padding: 3px; /* 减少表单控件的内边距 */
+            margin-right: 10px; /* 控件之间的间距 */
+        }
+
+        button {
+            padding: 5px 10px; /* 让按钮更紧凑 */
+        }
+    </style>
+</head>
+<body>
+    <h1>Daily Receiving List</h1>
+
+    <!-- 查询表单 -->
+    <form method="POST" action="/receiving">
+        <label for="record_date">Record Date:</label>
+        <input type="date" name="record_date">
+        
+        <label for="receiving_date">Receiving Date:</label>
+        <input type="date" name="receiving_date">
+
+        <label for="receiving_type">Receiving Type:</label>
+        <select id="receiving_type" name="receiving_type">
+            <option value="">-- Select Type --</option>
+            <option value="Purchase">Purchase</option>
+            <option value="Removal">Removal</option>
+            <option value="RMA">RMA</option>
+            <option value="Callback">Callback</option>
+            <option value="Warranty">Warranty</option>
+        </select>
+
+        <label for="name">Name:</label>
+        <input type="text" name="name">
+
+        <label for="finale_id">Finale ID:</label>
+        <input type="text" name="finale_id">
+
+        <label for="sn">Serial Number (SN):</label>
+        <input type="text" name="sn">
+
+        <label for="tracking_number">Tracking Number:</label>
+        <input type="text" name="tracking_number">
+
+        <button type="submit">Search</button>
+    </form>
+
+    <!-- 数据表格 -->
+    <table>
+        <thead>
+            <tr>
+                <th>Record Date</th>
+                <th>Receiving Date</th>
+                <th>Receiving Type</th>
+                <th>Name</th>
+				<th>PO Number</th>
+                <th>Finale ID</th>
+                <th>Part No</th>
+                <th>SN</th>
+                <th>Total Received QTY</th>
+                <th>Total Order QTY</th>
+                <th>Tracking Number</th>
+                <th>Received Status</th>
+                <th>Receiving Notes</th>
+                <th>Location</th>
+                <th>Master</th>
+                <th>Unit Weight</th>
+                <th>Unit Dimension</th>
+                <th>Packing Dimension Per Unit</th>
+                <th>PO Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>2024-09-08 16:26</td>
+                <td>2024-09-08</td>
+                <td>Removal</td>
+                <td>Walter</td>
+                <td>119</td>
+				<td>119.</td>
+                <td>119</td>
+                <td>119</td>
+                <td>119</td>
+                <td>119</td>
+                <td style="white-space: pre-line; width: 300px;">
+                    127.0.0.1 - - [08/Sep/2024 16:19:52] <br>
+                    127.0.0.1 - - [08/Sep/2024 16:19:52] <br>
+                    127.0.0.1 - - [08/Sep/2024 16:19:52]
+                </td>
+                <td>119</td>
+                <td>119</td>
+                <td>119</td>
+                <td>119</td>
+                <td>119.0</td>
+                <td>119</td>
+                <td>119</td>
+                <td>119</td>
+                <td>
+                    <a href="/edit/18">Edit</a> | 
+                    <a href="/delete/18" onclick="return confirm('Are you sure you want to delete this record?');">Delete</a>
+                </td>
+            </tr>
+            <!-- 更多行 -->
+        </tbody>
+    </table>
+
+    <!-- 分页 -->
+    <div>
+        <span>Page: </span>
+        <strong>1</strong>
+    </div>
+
+    <!-- 每页显示条数选择 -->
+    <div>
+        <form method="GET" action="/receiving">
+            <select name="per_page" onchange="this.form.submit()">
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </form>
+    </div>
+
+    <a href="/add">Add New Record</a>
+
+    <!-- JavaScript 控制 "more" 链接 -->
+    <script>
+        function toggleField(id) {
+            var div = document.getElementById(id);
+            if (div.style.display === 'none') {
+                div.style.display = 'block';
+            } else {
+                div.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

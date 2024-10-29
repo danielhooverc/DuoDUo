@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Record</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: flex-start; /* 垂直方向靠顶部 */
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            background-color: #fff;
+            padding: 3px;
+            border-radius: 2px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 800px;
+        }
+
+        table {
+            width: 800px;
+            border-collapse: collapse; /* 合并表格的边框 */
+        }
+
+        td, th {
+            padding: 1px;
+            border: 1px solid #ddd; /* 设置表格边框 */
+        }
+
+        td:first-child {
+            width: 33.33%; /* 左侧栏宽度占33.33% */
+        }
+
+        td:last-child {
+            width: 66.67%; /* 右侧栏宽度占66.67% */
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-size: 13px;
+        }
+
+        input, select, textarea {
+            width: 98%; /* 控件宽度为单元格宽度的50% */
+            padding: 3px;
+            border: 2px solid #ccc;
+            border-radius: 1px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            width: 50%;
+            padding: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .center-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto; /* 保持水平居中，并增加与顶部的距离 */
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 5px;
+            width: auto;
+        }
+
+        .checkbox-container label {
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+
+    <div class="center-container">
+
+ 
+        <form method="POST" action="{{ url_for('edit_record', record_id=record.RecordID,page=page, per_page=per_page,sort=sort, order=order)}}"  autocomplete="off">
+            <h1>Update Receiving Record</h1>
+            <table>
+                <tr>
+                    <td><label for="receiving_date">Receiving Date:</label></td>
+                    <td>
+					<input type="date" id="receiving_date" name="receiving_date" value="{{ record.ReceivingDate.strftime('%Y-%m-%d') }}" required>
+                </tr>
+                <tr>
+                    <td><label for="receiving_type">Receiving Type:</label></td>
+                    <td>
+					  <select id="receiving_type" name="receiving_type" required>
+								<option value="Purchase" {% if record.ReceivingType == 'Purchase' %}selected{% endif %}>Purchase</option>
+								<option value="Removal" {% if record.ReceivingType == 'Removal' %}selected{% endif %}>Removal</option>
+								<option value="RMA" {% if record.ReceivingType == 'RMA' %}selected{% endif %}>RMA</option>
+								<option value="Callback" {% if record.ReceivingType == 'Callback' %}selected{% endif %}>Callback</option>
+								<option value="Warranty" {% if record.ReceivingType == 'Warranty' %}selected{% endif %}>Warranty</option>
+							</select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><label for="ponumber">PO Number:</label></td>
+                    <td><input type="text" id="ponumber" name="ponumber"  value="{{ record.PONumber }}"  maxlength="30" ></td>
+                </tr>
+                <tr>
+                    <td><label for="finale_id">Finale ID:</label></td>
+                    <td><input type="text" id="finale_id" name="finale_id"  value="{{ record.FinaleID }}" maxlength="30" ></td>
+                </tr>
+                <tr>
+                    <td><label for="part_no">Part No:</label></td>
+                    <td>
+                    <textarea id="part_no" name="part_no" maxlength="500" rows="3" placeholder="Enter up to 10 Part No, one per line"  >{{ record.PartNo }}</textarea>
+					</td>
+                </tr>
+                <tr>
+                    <td>
+					    <label for="sn">Serial Number (SN):</label>
+						<div class="checkbox-container">
+							 <input type="checkbox" id="ignore_sn_duplicates" name="ignore_sn_duplicates">
+							<label for="ignore_sn_duplicates">Ignore duplicates</label>
+						</div>
+					</td>
+
+                    <td>
+					<textarea id="sn" name="sn" maxlength="500" rows="9" placeholder="Enter up to 10 Serial Numbers, one per line"  >{{ record.SN }}</textarea>
+					</td>
+                </tr>
+                <tr>
+                    <td><label for="total_received_qty">Total Received Quantity:</label></td>
+                    <td><input type="number" id="total_received_qty" name="total_received_qty"  value="{{ record.Total_Received_QTY }}" min="0" max="999" maxlength="3" pattern="^\d+$"></td>
+                </tr>
+                <tr>
+                    <td><label for="total_order_qty">Total Order Quantity:</label></td>
+                    <td><input type="number" id="total_order_qty" name="total_order_qty"  value="{{ record.Total_Order_QTY }}" min="0" max="999" maxlength="3"  pattern="^\d+$"></td>
+                </tr>
+                <tr>
+                    <td>
+					      <label for="tracking_number">Tracking Number:</label>
+						  <div class="checkbox-container">
+							<input type="checkbox" id="ignore_tracking_duplicates" name="ignore_tracking_duplicates">
+							<label for="ignore_tracking_duplicates">Ignore duplicates</label>
+						  </div>
+					</td>
+                    <td><textarea id="tracking_number" name="tracking_number" maxlength="3000" rows="9" placeholder="Enter up to 20 tracking numbers, one per line"  required>{{ record.TrackingNumber }}</textarea></td>
+                </tr>
+                <tr>
+                    <td><label for="received_status">Received Status:</label></td>
+                    <td><input id="received_status" name="received_status"  value="{{ record.ReceivedStatus }}" maxlength="500"></td>
+                </tr>
+                <tr>
+                    <td><label for="receiving_notes">Receiving Notes:</label></td>
+                    <td><input id="receiving_notes" name="receiving_notes"  value="{{ record.ReceivingNotes }}" maxlength="3000"></td>
+                </tr>
+                <tr>
+                    <td><label for="location">Location:</label></td>
+                    <td><input type="text" id="location" name="location"  value="{{ record.Location }}" maxlength="99" ></td>
+                </tr>
+                <tr>
+                    <td><label for="master">Master:</label></td>
+                    <td><input type="text" id="master" name="master" value="{{ record.Master }}"  maxlength="30" ></td>
+                </tr>
+                <tr>
+                    <td><label for="unit_weight">Unit Weight:</label></td>
+                    <td><input type="number" step="0.01" id="unit_weight" name="unit_weight"  value="{{ record.UnitWeight }}" min="0" max="999.99" maxlength="5" pattern="^\d+(\.\d{1,2})?$" ></td>
+                </tr>
+
+                <tr>
+                    <td><label for="unit_dimension">Unit Dimension:</label></td>
+                    <td><input type="text" id="unit_dimension" name="unit_dimension"  value="{{ record.UnitDimension }}" maxlength="30" ></td>
+                </tr>
+                
+				<tr>
+                    <td><label for="packing_dimension_per_unit">Packing Dimension Per Unit:</label></td>
+                    <td><input type="text" id="packing_dimension_per_unit" name="packing_dimension_per_unit"  value="{{ record.Packing_Dimension_Per_Unit }}" maxlength="50" ></td>
+                </tr>
+                
+				<tr>
+                    <td><label for="po_status">PO Status:</label></td>
+                    <td><input type="text" id="po_status" name="po_status" value="{{ record.POStatus }}"  maxlength="500"></td>
+                </tr>
+                
+				<tr>
+					 <!-- 返回记录列表的链接 -->
+					<td >
+ 						<a href="{{ url_for('receiving_list',page=page, per_page=per_page,sort=sort, order=order) }}" >Back to Receiving List</a>
+                    </td>
+
+
+                    <td  style="text-align: center;">  <button type="submit">Update Record</button>    </td>
+
+	
+
+                </tr>
+
+
+
+
+            </table>
+        </form>
+    </div>
+
+
+<!-- 在这里引入外部 JavaScript 文件；控制控件跳转顺序 -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+ <!-- 添加JavaScript;如果有重复记录弹出提示框提示 -->
+    <script>
+		document.addEventListener('DOMContentLoaded', function() {
+                
+         		// 处理表单提交的情况
+				const form = document.querySelector('form');
+				
+				form.addEventListener('submit', function(e) {
+				    // 阻止表单的默认提交行为
+					e.preventDefault();
+					//创建一个包含表单所有字段数据的 FormData 对象
+					const formData = new FormData(this);
+					
+					fetch(this.action, {
+						method: 'POST',
+						body: formData,
+					})
+					//第一个 .then() 将响应转换为 JSON
+					.then(response => response.json())
+					//第二个 .then() 处理转换后的 JSON 数据
+					.then(data => {
+						if (data.success === 'False') {
+							alert(data.duplicate_message);
+						} else if(data.success=='True'){
+							//alert('Record updated successfully!');
+							// 重定向到 receiving_list 页面;Jinja2 模板中使用 |safe 过滤器来解决HTML 实体编码中出现的冗余字符&amp; 
+					        window.location.href = "{{ url_for('receiving_list', page=page, per_page=per_page, sort=sort, order=order) | safe }}";
+						}
+					}) //then(data
+					.catch(error => {
+						console.error('Error:', error);
+						alert('An error occurred. Please try again.');
+					});  // catch(
+				}); //form.addEventListener
+		});
+
+  </script>
+
+
+</body>
+</html>
