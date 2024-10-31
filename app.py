@@ -32,34 +32,48 @@ def get_db_connection():
 def homepage():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
+        password =request.form.get('password')
 
-        # 检查UserID是否为空
-        if not user_id:
-            flash("Please enter your UserID", "error")
-            return render_template('homepage.html')
+        # # 检查UserID是否为空
+        # if not user_id:
+        #     flash("Please enter your UserID", "error")
+        #     return render_template('homepage.html')
 
         # 查询数据库
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id, user_name FROM user_info WHERE user_id = %s", (user_id,))
-        user = cursor.fetchone()
+        cursor.execute("SELECT user_id, user_name,account_id,is_active FROM user_info WHERE user_id = %s and password =%s", (user_id,password))
+        user_info = cursor.fetchone()
         conn.close()
 
         # 检查UserID是否存在
-        if not user:
-            flash("UserID does not exist!", "error")
+        if (not user_info):
+            flash("Invalid UserID or Password!", "error")
+            cursor.close()
+            conn.close()
             return render_template('homepage.html')
+
+
+        account_id = user_info[2]
+        is_active = user_info[3]
+
+        if is_active==0:
+            flash("This account is not activated. Please contact administrator.", "error")
+            cursor.close()
+            conn.close()
+            return render_template('homepage.html')
+
 
         #登录后清除之前所有残留的Session信息
         session.clear()
         # 保存用户信息到Session中
-        session['UserID'] = user[0]
-        session['UserName'] = user[1]
+        session['UserID'] = user_info[0]
+        session['UserName'] = user_info[1]
         session['search_type']='None'
 
 
         # 跳转到新页面
-        return redirect(url_for('receiving_list'))
+        return redirect(url_for('warehouse_layout'))
 
 
         #*********************************************************************************************
@@ -76,6 +90,35 @@ def homepage():
 
     return render_template('homepage.html')
 
+
+# 仓库布局页面路由
+@app.route('/warehouse_layout')
+def warehouse_layout():
+    # # 检查用户是否登录
+    # if 'UserID' not in session:
+    #     flash("Please login first", "error")
+    #     return redirect(url_for('homepage'))
+    #
+    # # 获取用户的仓库权限
+    # warehouse_record_id = session.get('warehouse_record_id')
+    #
+    # # 这里添加获取仓库布局数据的逻辑
+    # conn = get_db_connection()
+    # cursor = conn.cursor(dictionary=True)
+    #
+    # # 根据warehouse_record_id获取仓库布局数据
+    # # 这里需要根据您的实际数据库结构修改SQL语句
+    # cursor.execute("""
+    #     SELECT * FROM warehouse_layout
+    #     WHERE warehouse_record_id = %s
+    # """, (warehouse_record_id,))
+    #
+    # layout_data = cursor.fetchall()
+    # cursor.close()
+    # conn.close()
+    #
+    # return render_template('warehouse_layout.html', layout_data=layout_data)
+    return render_template('warehouse_layout.html')
 
 # Daily Receiving List 页面
 @app.route('/receiving', methods=['GET', 'POST'])

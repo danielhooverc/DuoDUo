@@ -4,33 +4,134 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Receiving - Login</title>
-    <!-- 引入CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Visual Warehouse Management - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 55px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .messages li {
+            list-style: none;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+    </style>
 </head>
 <body>
-    <h2>Visual Warehouse Management</h2>
-    <h1>Enter Your UserID</h1>
-    
-    <!-- 提示框 -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul>
-          {% for category, message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    
-    <!-- 表单 -->
-    <form method="POST" action="/">
-        <label for="user_id">UserID:</label>
-        <input type="text" id="user_id" name="user_id">
-        <button type="submit">Confirm</button>
-    </form>
+   <div>
+       <h1>Visual Warehouse Management</h1>
+   </div>
+    <div class="login-container">
+        <h2>Login System</h2>
 
-    <!-- 引入JavaScript -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+        <!-- 提示框 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="messages">
+              {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <!-- 登录表单 -->
+        <form method="POST" action="/" id="loginForm">
+            <div class="form-group">
+                <label for="user_id">UserID:</label>
+                <input type="text" id="user_id" name="user_id" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" maxlength="20">
+            </div>
+            <button type="submit">Confirm</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').onsubmit = function(e) {
+            const userId = document.getElementById('user_id').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!userId || !password) {
+                e.preventDefault();
+                alert('Please enter both UserID and Password');
+                return false;
+            }
+        }
+    </script>
 </body>
 </html>
